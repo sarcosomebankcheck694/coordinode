@@ -1,0 +1,68 @@
+[package]
+name = "coordinode-storage"
+description = "Storage engine: Fjall LSM integration, WAL, BlobStore, compression"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[features]
+default = ["lz4"]
+lz4 = ["lsm-tree/lz4", "dep:lz4_flex"]
+zstd = ["lsm-tree/zstd", "dep:zstd"]
+encryption = ["lsm-tree/encryption"]
+
+[dependencies]
+coordinode-core = { workspace = true }
+
+# LSM engine — permanent fork (ADR-018), crates.io dependency
+lsm-tree = { package = "coordinode-lsm-tree", version = "4", default-features = false }
+
+# Fjall internals dependencies (consumed per ADR-019)
+dashmap = "6.1.0"
+flume = { version = "0.12.0", default-features = false }
+byteorder = { package = "byteorder-lite", version = "0.1.0" }
+byteview = "~0.10.1"
+log = "0.4.27"
+tempfile = "3.20.0"
+lz4_flex = { version = "0.13.0", optional = true }
+zstd = { version = "0.13", optional = true, default-features = false }
+
+# Existing dependencies
+serde = { workspace = true }
+rmp-serde = { workspace = true }
+rmpv = { workspace = true }
+serde_bytes = "0.11"
+thiserror = { workspace = true }
+bytes = { workspace = true }
+tracing = { workspace = true }
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+crc32fast = "1"
+
+[dev-dependencies]
+tempfile = { workspace = true }
+proptest = { workspace = true }
+criterion = { workspace = true }
+# Fjall internal test dependencies (consumed per ADR-019)
+nanoid = "0.4.0"
+test-log = "0.2.18"
+rand = "0.8"
+
+[[bench]]
+name = "merge_stress"
+harness = false
+
+[[bench]]
+name = "mvcc_point_read"
+harness = false
+
+[[bench]]
+name = "oplog_append"
+harness = false
+
+[[bench]]
+name = "flush_compaction"
+harness = false
+
+[lints]
+workspace = true

@@ -1,0 +1,170 @@
+//! CoordiNode server binary.
+//!
+//! Usage:
+//!   coordinode serve [--addr ADDR] [--data DIR]
+//!   coordinode version
+//!   coordinode verify [--data DIR] [--deep]
+//!
+//! # Cluster-ready notes
+//! - gRPC server is stateless — all state in CoordiNode storage.
+//! - In CE 3-node HA: each node runs identical gRPC server.
+//! - Inter-node communication uses the same :7080 port (distributed mode).
+
+use std::net::SocketAddr;
+use std::sync::Arc;
+
+use coordinode_storage::Guard;
+use tonic::transport::Server;
+use tracing::info;
+
+pub mod proto {
+    pub mod common {
+        tonic::include_proto!("coordinode.v1.common");
+    }
+    pub mod graph {
+        tonic::include_proto!("coordinode.v1.graph");
+    }
+    pub mod query {
+        tonic::include_proto!("coordinode.v1.query");
+    }
+    pub mod health {
+        tonic::include_proto!("coordinode.v1.health");
+    }
+    pub mod replication {
+        pub mod cdc {
+            tonic::include_proto!("coordinode.v1.replication");
+        }
+    }
+}
+
+mod cli;
+mod logging;
+mod metrics_catalog;
+mod ops;
+mod services;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let command = cli::parse_args();
+
+    match command {
+        cli::Command::Version => {
+            println!("coordinode v{}", env!("CARGO_PKG_VERSION"));
+        }
+
+        cli::Command::Verify { data_dir, deep } => {
+            logging::init_logging();
+            info!(data_dir = %data_dir, deep = deep, "verifying storage integrity");
+
+            let config = coordinode_storage::engine::config::StorageConfig::new(&data_dir);
+            let engine = coordinode_storage::engine::core::StorageEngine::open(&config)?;
+            let disk = engine.disk_space()?;
+            info!(disk_bytes = disk, "storage opened successfully");
+
+            if deep {
+                info!("deep verification: scanning all partitions...");
+                for &part in coordinode_storage::engine::partition::Partition::all() {
+                    let iter = engine.prefix_scan(part, b"")?;
+                    let mut count = 0u64;
+                    for guard in iter {
+                        let _ = guard.into_inner()?;
+                        count += 1;
+                    }
+                    info!(
+                        partition = part.name(),
+                        entries = count,
+                        "partition verified"
+                    );
+                }
+            }
+
+            info!("verification complete");
+        }
+
+        cli::Command::Serve {
+            grpc_addr,
+            data_dir,
+        } => {
+            logging::init_logging();
+
+            let addr: SocketAddr = grpc_addr.parse()?;
+            info!(
+                data_dir = %data_dir,
+                "coordinode v{} starting on {addr}",
+                env!("CARGO_PKG_VERSION")
+            );
+
+            coordinode_vector::metrics::log_simd_capabilities();
+
+            // Open embedded Database — single storage instance for all services.
+            let database = Arc::new(std::sync::Mutex::new(
+                coordinode_embed::Database::open(&data_dir)
+                    .map_err(|e| format!("failed to open database: {e}"))?,
+            ));
+
+            let query_registry = Arc::new(coordinode_query::advisor::QueryRegistry::new());
+            let nplus1_detector =
+                Arc::new(coordinode_query::advisor::nplus1::NPlus1Detector::new());
+
+            let graph_service = services::graph::GraphServiceImpl;
+            let schema_service = services::schema::SchemaServiceImpl;
+            let cypher_service = services::cypher::CypherServiceImpl::new(
+                Arc::clone(&database),
+                Arc::clone(&query_registry),
+                Arc::clone(&nplus1_detector),
+            );
+            let vector_service = services::vector::VectorServiceImpl;
+            let health_service = services::health::HealthServiceImpl;
+            // CDC service: tails oplog/<shard>/ dir. Empty stream in embedded mode
+            // (no oplog); populated in Raft cluster mode (LogStore writes oplog).
+            let cdc_service =
+                services::cdc::ChangeEventServiceImpl::new(std::path::PathBuf::from(&data_dir));
+
+            // BlobService shares the same storage engine as the Database.
+            let blob_engine = database
+                .lock()
+                .map_err(|e| format!("failed to lock database for blob engine: {e}"))?
+                .engine_shared();
+            let blob_service = services::blob::BlobServiceImpl::new(blob_engine);
+
+            // Spawn operational HTTP server on :7084
+            let ops_addr: SocketAddr = "[::]:7084".parse()?;
+            tokio::spawn(async move {
+                if let Err(e) = ops::start_ops_server(ops_addr).await {
+                    tracing::error!("ops server error: {e}");
+                }
+            });
+
+            info!(port = addr.port(), "gRPC server listening");
+
+            Server::builder()
+                .add_service(proto::graph::graph_service_server::GraphServiceServer::new(
+                    graph_service,
+                ))
+                .add_service(
+                    proto::graph::schema_service_server::SchemaServiceServer::new(schema_service),
+                )
+                .add_service(
+                    proto::query::cypher_service_server::CypherServiceServer::new(cypher_service),
+                )
+                .add_service(
+                    proto::query::vector_service_server::VectorServiceServer::new(vector_service),
+                )
+                .add_service(
+                    proto::health::health_service_server::HealthServiceServer::new(health_service),
+                )
+                .add_service(proto::graph::blob_service_server::BlobServiceServer::new(
+                    blob_service,
+                ))
+                .add_service(
+                    proto::replication::cdc::change_stream_service_server::ChangeStreamServiceServer::new(
+                        cdc_service,
+                    ),
+                )
+                .serve(addr)
+                .await?;
+        }
+    }
+
+    Ok(())
+}

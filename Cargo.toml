@@ -1,0 +1,108 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/coordinode-core",
+    "crates/coordinode-query",
+    "crates/coordinode-vector",
+    "crates/coordinode-search",
+    "crates/coordinode-storage",
+    "crates/coordinode-raft",
+    "crates/coordinode-auth",
+    "crates/coordinode-server",
+    "crates/coordinode-s3",
+    "crates/coordinode-embed",
+]
+
+[workspace.package]
+version = "0.1.0-alpha.1"
+edition = "2021"
+rust-version = "1.90"
+license = "AGPL-3.0-only"
+repository = "https://github.com/structured-world/coordinode"
+authors = ["structured.world <dev@structured.world>"]
+
+[workspace.dependencies]
+# Storage — fjall consumed into coordinode-storage per ADR-019
+# coordinode-lsm-tree remains as external crates.io dependency (ADR-018)
+
+# Consensus
+openraft = { version = "0.10.0-alpha.17", features = ["serde"] }
+
+# Full-text search
+tantivy = "0.25"
+rust-stemmers = { git = "https://github.com/structured-world/rust-stemmers.git", branch = "main" }
+whatlang = "0.18"
+
+# CJK tokenization (optional, per-language feature flags)
+lindera = { version = "2.3", default-features = false }
+jieba-rs = "0.8"
+
+# gRPC
+tonic = "0.14"
+prost = "0.14"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rmp = "0.8"
+rmp-serde = "1"
+rmpv = { version = "1", features = ["with-serde"] }
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+metrics = "0.24"
+metrics-exporter-prometheus = "0.18"
+
+# Parser
+pest = "2"
+pest_derive = "2"
+
+# Error handling
+thiserror = "2"
+
+# Crypto
+sha2 = "0.10"
+aes-gcm = "0.10"
+hmac = "0.12"
+rand = "0.8"
+
+# Utilities
+bytes = "1"
+
+# Testing
+tempfile = "3"
+proptest = "1"
+
+# Benchmarks
+criterion = { version = "0.5", features = ["html_reports"] }
+
+# Internal crates
+coordinode-core = { path = "crates/coordinode-core" }
+coordinode-query = { path = "crates/coordinode-query" }
+coordinode-vector = { path = "crates/coordinode-vector" }
+coordinode-search = { path = "crates/coordinode-search" }
+coordinode-storage = { path = "crates/coordinode-storage" }
+coordinode-raft = { path = "crates/coordinode-raft" }
+coordinode-auth = { path = "crates/coordinode-auth" }
+coordinode-server = { path = "crates/coordinode-server" }
+coordinode-s3 = { path = "crates/coordinode-s3" }
+coordinode-embed = { path = "crates/coordinode-embed" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "warn"
+panic = "warn"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = true
+panic = "abort"
+opt-level = 3

@@ -1,0 +1,33 @@
+[package]
+name = "coordinode-s3"
+description = "S3-compatible gateway binary for CoordiNode BlobStore"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "coordinode-s3"
+path = "src/main.rs"
+
+[dependencies]
+coordinode-core = { workspace = true }
+coordinode-storage = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+thiserror = { workspace = true }
+sha2 = { workspace = true }
+hex = "0.4"
+hyper = { version = "1", features = ["server", "http1"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+http-body-util = "0.1"
+bytes = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

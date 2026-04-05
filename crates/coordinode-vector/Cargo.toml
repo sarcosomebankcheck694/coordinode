@@ -1,0 +1,34 @@
+[package]
+name = "coordinode-vector"
+description = "Vector search: HNSW index, scalar quantization, distance metrics with SIMD"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+coordinode-core = { workspace = true }
+coordinode-storage = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+rmp-serde = { workspace = true }
+tempfile = { workspace = true }
+
+[[bench]]
+name = "hnsw_search"
+harness = false
+
+# Cannot use workspace lints because SIMD intrinsics require unsafe.
+# This is the ONLY crate with unsafe_code = "allow".
+# All SIMD functions have scalar fallbacks and use runtime feature detection.
+[lints.rust]
+unsafe_code = "allow"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "warn"
+panic = "warn"

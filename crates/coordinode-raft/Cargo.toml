@@ -1,0 +1,34 @@
+[package]
+name = "coordinode-raft"
+description = "Consensus: openraft wrapper, leader election, streaming snapshots"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+coordinode-core = { workspace = true }
+coordinode-storage = { workspace = true }
+openraft = { workspace = true }
+metrics = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+rmp-serde = { workspace = true }
+bytes = { workspace = true }
+futures-util = "0.3"
+tonic = { workspace = true }
+tonic-prost = "0.14"
+prost = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[build-dependencies]
+tonic-prost-build = "0.14"
+
+[lints]
+workspace = true

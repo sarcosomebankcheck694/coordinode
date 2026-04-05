@@ -1,0 +1,55 @@
+name: Bug Report
+description: Report a bug in CoordiNode
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please fill in the details below.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened? What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Minimal steps or Cypher query to reproduce the issue.
+      placeholder: |
+        1. Start CoordiNode with `docker compose up -d`
+        2. Run query: `MATCH (n) RETURN n`
+        3. See error: ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: CoordiNode Version
+      description: Output of `coordinode version`
+      placeholder: "0.1.0-alpha.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - Docker
+        - Binary (built from source)
+        - Embedded (coordinode-embed)
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs
+      description: Any error messages, stack traces, or log output.
+      render: shell

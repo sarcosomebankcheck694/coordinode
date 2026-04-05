@@ -1,0 +1,42 @@
+CoordiNode Third-Party Notices
+================================
+
+This file lists third-party code consumed into CoordiNode with attribution
+as required by their respective licenses.
+
+
+## fjall-rs (Apache-2.0)
+
+CoordiNode includes code derived from fjall-rs, consumed per ADR-019.
+
+- Original repository: https://github.com/fjall-rs/fjall
+- Fork repository: https://github.com/structured-world/coordinode-fjall (archived)
+- Original authors: fjall-rs contributors
+- License: Apache-2.0 (full text in fjall-rs repository)
+- Consumption date: 2026-03-24
+
+### Location in CoordiNode:
+
+All consumed code resides in `crates/coordinode-storage/src/kv/` as native
+coordinode modules under AGPL-3.0-only, with per-file Apache-2.0 attribution.
+
+Keeper modules (remain in coordinode-storage long-term):
+  flush/{manager,task,worker}, worker_pool, snapshot_tracker, snapshot,
+  snapshot_nonce, readable, iter, guard, write_buffer_manager, poison_dart,
+  file utils, locked_file, version, error
+
+Temporary modules (will be replaced by TreeManager/Raft oplog):
+  db, db_config, builder, keyspace/*, journal/*, tx/*, batch/*,
+  compaction/*, meta_keyspace, backup, recovery, ingestion, stats,
+  supervisor, path, write_group
+
+### Modifications:
+  - All modules integrated as native coordinode-storage code
+  - Module paths: coordinode_storage::kv::*
+  - AGPL-3.0-only license with Apache-2.0 attribution per file
+  - unsafe blocks replaced with safe alternatives (workspace forbids unsafe)
+  - Integrated with coordinode-lsm-tree (permanent Apache-2.0 fork, ADR-018)
+
+### Patent grant:
+  Apache-2.0 patent grant (§3) carries forward to all downstream users.
+  No additional patent action required.

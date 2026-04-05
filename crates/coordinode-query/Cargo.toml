@@ -1,0 +1,39 @@
+[package]
+name = "coordinode-query"
+description = "Query layer: OpenCypher parser, query planner, GraphQL auto-generation"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[features]
+cjk-zh = ["coordinode-search/cjk-zh"]
+cjk-ja = ["coordinode-search/cjk-ja"]
+cjk-ko = ["coordinode-search/cjk-ko"]
+cjk = ["coordinode-search/cjk"]
+
+[dependencies]
+coordinode-core = { workspace = true }
+coordinode-storage = { workspace = true }
+coordinode-vector = { workspace = true }
+coordinode-search = { workspace = true }
+pest = { workspace = true }
+pest_derive = { workspace = true }
+sha2 = { workspace = true }
+rmp-serde = { workspace = true }
+rmpv = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+criterion = { workspace = true }
+coordinode-embed = { workspace = true }
+
+[[bench]]
+name = "edge_vector_strategy"
+harness = false
+
+[lints]
+workspace = true

@@ -1,0 +1,209 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "type": "datasource",
+      "pluginId": "prometheus"
+    }
+  ],
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Cluster Overview",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
+    },
+    {
+      "title": "Raft Leader",
+      "type": "stat",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [{ "expr": "coordinode_raft_leader == 1", "legendFormat": "{{instance}}" }],
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "options": { "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "title": "Raft Term",
+      "type": "stat",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [{ "expr": "max(coordinode_raft_term)", "legendFormat": "term" }],
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 }
+    },
+    {
+      "title": "Nodes Total",
+      "type": "stat",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [{ "expr": "sum(coordinode_graph_nodes_total)", "legendFormat": "nodes" }],
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 }
+    },
+    {
+      "title": "Edges Total",
+      "type": "stat",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [{ "expr": "sum(coordinode_graph_edges_total)", "legendFormat": "edges" }],
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 }
+    },
+    {
+      "title": "Active Queries",
+      "type": "stat",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [{ "expr": "sum(coordinode_query_active)", "legendFormat": "active" }],
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 }
+    },
+    {
+      "title": "gRPC Connections",
+      "type": "stat",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [{ "expr": "sum(coordinode_grpc_connections_active)", "legendFormat": "connections" }],
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 }
+    },
+    {
+      "title": "Query Performance",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }
+    },
+    {
+      "title": "Query Latency (P50 / P95 / P99)",
+      "type": "timeseries",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        { "expr": "histogram_quantile(0.50, rate(coordinode_query_duration_seconds_bucket[5m]))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, rate(coordinode_query_duration_seconds_bucket[5m]))", "legendFormat": "p95" },
+        { "expr": "histogram_quantile(0.99, rate(coordinode_query_duration_seconds_bucket[5m]))", "legendFormat": "p99" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "title": "Query Rate (QPS)",
+      "type": "timeseries",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        { "expr": "sum(rate(coordinode_query_total[5m])) by (type)", "legendFormat": "{{type}}" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+    {
+      "title": "Query Errors",
+      "type": "timeseries",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        { "expr": "sum(rate(coordinode_query_errors_total[5m])) by (type)", "legendFormat": "{{type}}" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 }
+    },
+    {
+      "title": "gRPC Request Latency",
+      "type": "timeseries",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        { "expr": "histogram_quantile(0.95, rate(coordinode_grpc_duration_seconds_bucket[5m]))", "legendFormat": "p95" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "title": "Storage",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 }
+    },
+    {
+      "title": "Cache Hit Rate",
+      "type": "gauge",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        { "expr": "sum(rate(coordinode_cache_hit_total[5m])) / (sum(rate(coordinode_cache_hit_total[5m])) + sum(rate(coordinode_cache_miss_total[5m])))", "legendFormat": "hit rate" }
+      ],
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 23 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } }
+    },
+    {
+      "title": "LSM Bytes per Level",
+      "type": "bargauge",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        { "expr": "coordinode_storage_lsm_bytes", "legendFormat": "L{{level}}" }
+      ],
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 23 },
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "title": "WAL Sync Duration (P95)",
+      "type": "timeseries",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        { "expr": "histogram_quantile(0.95, rate(coordinode_wal_sync_duration_seconds_bucket[5m]))", "legendFormat": "p95" }
+      ],
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 23 },
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "title": "Compaction Rate",
+      "type": "timeseries",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        { "expr": "rate(coordinode_storage_compaction_total[5m])", "legendFormat": "{{instance}}" }
+      ],
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 23 }
+    },
+    {
+      "title": "Graph Stats",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 29 }
+    },
+    {
+      "title": "Nodes per Label",
+      "type": "piechart",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        { "expr": "coordinode_graph_nodes_total", "legendFormat": "{{label}}" }
+      ],
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 30 }
+    },
+    {
+      "title": "Edges per Type",
+      "type": "piechart",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        { "expr": "coordinode_graph_edges_total", "legendFormat": "{{edge_type}}" }
+      ],
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 30 }
+    },
+    {
+      "title": "Vector Index Size",
+      "type": "bargauge",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        { "expr": "coordinode_vector_index_size", "legendFormat": "{{label}}" }
+      ],
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 30 },
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["coordinode", "graph", "database"],
+  "templating": {
+    "list": [
+      {
+        "name": "instance",
+        "type": "query",
+        "datasource": "${DS_PROMETHEUS}",
+        "query": "label_values(coordinode_raft_term, instance)",
+        "multi": true,
+        "includeAll": true
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "CoordiNode Overview",
+  "uid": "coordinode-overview",
+  "version": 1
+}

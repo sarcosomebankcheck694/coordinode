@@ -1,0 +1,29 @@
+# CoordiNode — integration test infrastructure.
+#
+# Uses tmpfs for fast, isolated test runs (no disk I/O, auto-cleanup).
+#
+# Usage:
+#   docker compose -f docker-compose.test.yml up -d
+#   cargo test --test integration -- --nocapture
+#   docker compose -f docker-compose.test.yml down
+
+services:
+  coordinode-test:
+    build:
+      context: ..
+      dockerfile: coordinode/Dockerfile
+    image: coordinode:test
+    container_name: coordinode-test
+    ports:
+      - "17080:7080"   # gRPC (test port offset)
+      - "17084:7084"   # Ops
+    tmpfs:
+      - /data:size=256M
+    environment:
+      - COORDINODE_LOG_FORMAT=json
+    healthcheck:
+      test: ["CMD", "/coordinode", "version"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 3s

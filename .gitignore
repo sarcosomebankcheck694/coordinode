@@ -1,0 +1,74 @@
+# Build artifacts
+/target/
+**/*.rs.bk
+*.pdb
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment & logs
+.env
+.env.*
+!.env.example
+*.log
+
+# === PRIVATE — must NOT leak to public GitHub repo ===
+# See CLAUDE.md "Repository Boundary" section for full policy.
+
+# Architecture docs (internal planning, competitive analysis, donor references)
+/arch/
+/.refs/
+/ARCHITECTURE.md
+/PRIVACY.md
+
+# Donor codebases (read-only reference, not for distribution)
+/ceph/
+/dgraph/
+/mongo/
+/neo4j/
+
+# Fork source trees (separate repos with their own git)
+/fjall/
+/lsm-tree/
+/rust-stemmers/
+
+# Internal planning & fix logs
+/fjall-fixes-plan.md
+*.plan.md
+
+# Local cargo overrides (path deps for development)
+.cargo/config.toml
+
+# Claude Code project config (contains internal workflow, memory, instructions)
+/CLAUDE.md
+.claude/
+
+# Proto source is a git submodule (coordinode-proto-ce)
+
+# Worktrees
+*-wt/
+
+# EE source (separate repo, never in CE)
+/coordinode-ee/
+/proto-ee/
+
+# Internal analysis, session transcripts, screenshots
+*.transcript
+/analysis/
+/sessions/
+
+# === END PRIVATE ===
+
+# Test artifacts
+/tmp/
+*.profraw
+*.profdata
+data/

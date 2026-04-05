@@ -1,0 +1,403 @@
+// OpenCypher PEG grammar for CoordiNode (read + write operations)
+// Read: MATCH, OPTIONAL MATCH, WHERE, RETURN, WITH, UNWIND,
+//       ORDER BY, SKIP, LIMIT, AS OF TIMESTAMP
+// Write: CREATE, MERGE, DELETE, DETACH DELETE, SET, REMOVE
+// Extensions: UPSERT MATCH, vector functions, parameters
+
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT    = _{ "//" ~ (!"\n" ~ ANY)* | "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+
+// --- Top-level ---
+
+query = { SOI ~ clause+ ~ EOI }
+
+clause = {
+    optional_match_clause
+  | match_clause
+  | where_clause
+  | return_clause
+  | with_clause
+  | unwind_clause
+  | as_of_timestamp_clause
+  | call_clause
+  | alter_label_clause
+  | create_text_index_clause
+  | create_clause
+  | merge_clause
+  | upsert_clause
+  | detach_delete_clause
+  | drop_text_index_clause
+  | delete_clause
+  | set_clause
+  | remove_clause
+}
+
+// --- MATCH ---
+
+match_clause = { kw_match ~ pattern_list ~ where_inline? }
+optional_match_clause = { kw_optional ~ kw_match ~ pattern_list ~ where_inline? }
+
+where_inline = { kw_where ~ expression }
+where_clause = { kw_where ~ expression }
+
+pattern_list = { pattern ~ ("," ~ pattern)* }
+pattern = { pattern_element+ }
+
+pattern_element = { node_pattern ~ (relationship_pattern ~ node_pattern)* }
+
+node_pattern = {
+    "(" ~ variable? ~ label_list? ~ property_map? ~ ")"
+}
+
+label_list = { (":" ~ identifier)+ }
+
+relationship_pattern = {
+    left_arrow ~ "[" ~ rel_detail ~ "]" ~ right_arrow
+  | left_arrow ~ "[" ~ rel_detail ~ "]" ~ dash
+  | dash ~ "[" ~ rel_detail ~ "]" ~ right_arrow
+  | dash ~ "[" ~ rel_detail ~ "]" ~ dash
+  | left_arrow ~ right_arrow
+  | left_arrow ~ dash
+  | dash ~ right_arrow
+  | dash ~ dash
+}
+
+left_arrow  = { "<-" | "-" }
+right_arrow = { "->" | "-" }
+dash        = { "-" }
+
+rel_detail = { variable? ~ rel_type_list? ~ length_spec? ~ property_map? }
+
+rel_type_list = { ":" ~ identifier ~ ("|" ~ ":"? ~ identifier)* }
+
+length_spec = { "*" ~ length_range? }
+length_range = {
+    integer_literal ~ ".." ~ integer_literal
+  | integer_literal ~ ".."
+  | ".." ~ integer_literal
+  | integer_literal
+}
+
+// --- RETURN ---
+// ORDER BY, SKIP, LIMIT are part of the return body per OpenCypher spec.
+
+return_clause = { kw_return ~ distinct_kw? ~ return_items ~ order_by_part? ~ skip_part? ~ limit_part? }
+return_items  = { return_item ~ ("," ~ return_item)* }
+return_item   = { star | expression ~ alias? }
+alias         = { kw_as ~ identifier }
+distinct_kw   = { kw_distinct }
+star          = { "*" }
+
+order_by_part = { kw_order ~ kw_by ~ sort_item ~ ("," ~ sort_item)* }
+sort_item     = { expression ~ sort_direction? }
+sort_direction = { kw_desc | kw_descending | kw_asc | kw_ascending }
+
+skip_part  = { kw_skip ~ expression }
+limit_part = { kw_limit ~ expression }
+
+// --- WITH ---
+
+with_clause = { kw_with ~ distinct_kw? ~ return_items ~ order_by_part? ~ skip_part? ~ limit_part? ~ where_inline? }
+
+// --- UNWIND ---
+
+unwind_clause = { kw_unwind ~ expression ~ kw_as ~ identifier }
+
+// --- AS OF TIMESTAMP ---
+
+as_of_timestamp_clause = { kw_as ~ kw_of ~ kw_timestamp ~ expression }
+
+// --- CALL (procedure invocation) ---
+// CALL db.advisor.suggestions() YIELD id, severity, kind, ...
+
+call_clause = { kw_call ~ procedure_name ~ "(" ~ procedure_args? ~ ")" ~ yield_clause? }
+procedure_name = { identifier ~ ("." ~ identifier)* }
+procedure_args = { expression ~ ("," ~ expression)* }
+yield_clause = { kw_yield ~ yield_items }
+yield_items = { yield_item ~ ("," ~ yield_item)* }
+yield_item = { identifier ~ alias? }
+
+// --- CREATE ---
+
+// --- ALTER LABEL ---
+
+alter_label_clause = { kw_alter ~ kw_label ~ identifier ~ kw_set ~ kw_schema ~ schema_mode }
+schema_mode = @{ ^"strict" | ^"validated" | ^"flexible" }
+
+// --- CREATE/DROP TEXT INDEX ---
+
+// Simple syntax:  CREATE TEXT INDEX idx ON :Label(prop) [LANGUAGE "en"]
+// Extended syntax: CREATE TEXT INDEX idx ON :Label {
+//   title: { analyzer: "english" },
+//   body:  { analyzer: "auto_detect" }
+// } [DEFAULT LANGUAGE "english"] [LANGUAGE OVERRIDE "lang"]
+create_text_index_clause = {
+    kw_create ~ kw_text ~ kw_index ~ identifier ~ kw_on ~ ":" ~ identifier
+    ~ (text_index_multi_field | text_index_single_field)
+    ~ text_index_default_language?
+    ~ text_index_language_override?
+}
+
+// Single-field: ON :Label(property) [LANGUAGE "en"]
+text_index_single_field = { "(" ~ identifier ~ ")" ~ text_index_language? }
+text_index_language = { kw_language ~ string_literal }
+
+// Multi-field: { field: { analyzer: "..." }, ... }
+text_index_multi_field = { "{" ~ text_index_field_def ~ ("," ~ text_index_field_def)* ~ ","? ~ "}" }
+text_index_field_def   = { identifier ~ ":" ~ "{" ~ text_field_option ~ ("," ~ text_field_option)* ~ ","? ~ "}" }
+text_field_option      = { text_field_analyzer }
+text_field_analyzer    = { kw_analyzer ~ ":" ~ string_literal }
+
+// Index-level modifiers
+text_index_default_language  = { kw_default ~ kw_language ~ string_literal }
+text_index_language_override = { kw_language ~ kw_override ~ string_literal }
+
+// DROP TEXT INDEX idx_name
+drop_text_index_clause = { kw_drop ~ kw_text ~ kw_index ~ identifier }
+
+// --- CREATE ---
+
+create_clause = { kw_create ~ pattern_list }
+
+// --- MERGE ---
+
+merge_clause = { kw_merge ~ pattern ~ merge_action* }
+merge_action = { on_match_action | on_create_action }
+on_match_action  = { kw_on ~ kw_match ~ kw_set ~ set_items }
+on_create_action = { kw_on ~ kw_create ~ kw_set ~ set_items }
+
+// --- UPSERT MATCH (CoordiNode extension) ---
+
+upsert_clause = { kw_upsert ~ kw_match ~ pattern ~ upsert_action* }
+upsert_action = { upsert_on_match | upsert_on_create }
+upsert_on_match  = { kw_on ~ kw_match ~ kw_set ~ set_items }
+upsert_on_create = { kw_on ~ kw_create ~ kw_create ~ pattern_list }
+
+// --- DELETE ---
+
+detach_delete_clause = { kw_detach ~ kw_delete ~ expression_list }
+delete_clause = { kw_delete ~ expression_list }
+expression_list = { expression ~ ("," ~ expression)* }
+
+// --- SET ---
+
+set_clause = { kw_set ~ set_items }
+set_items  = { set_item ~ ("," ~ set_item)* }
+
+set_item = {
+    set_doc_function
+  | set_property_item
+  | set_merge_props_item
+  | set_replace_props_item
+  | set_label_item
+}
+
+set_doc_function = {
+    doc_function_name ~ "(" ~ property_or_variable ~ "," ~ expression ~ ")"
+}
+doc_function_name = { "doc_push" | "doc_pull" | "doc_add_to_set" | "doc_inc" }
+
+set_property_item     = { identifier ~ ("." ~ identifier)+ ~ "=" ~ expression }
+set_merge_props_item  = { identifier ~ "+=" ~ expression }
+set_replace_props_item = { identifier ~ "=" ~ expression }
+set_label_item        = { identifier ~ label_list }
+
+// --- REMOVE ---
+
+remove_clause = { kw_remove ~ remove_items }
+remove_items  = { remove_item ~ ("," ~ remove_item)* }
+
+remove_item = {
+    remove_property_item
+  | remove_label_item
+}
+
+remove_property_item = { identifier ~ ("." ~ identifier)+ }
+remove_label_item    = { identifier ~ label_list }
+
+// --- Property map ---
+
+property_map = { "{" ~ property_pair ~ ("," ~ property_pair)* ~ "}" | "{" ~ "}" }
+property_pair = { identifier ~ ":" ~ expression }
+
+// --- Expressions ---
+
+expression = { or_expr }
+
+or_expr  = { xor_expr ~ (kw_or ~ xor_expr)* }
+xor_expr = { and_expr ~ (kw_xor ~ and_expr)* }
+and_expr = { not_expr ~ (kw_and ~ not_expr)* }
+
+not_expr = { kw_not ~ not_expr | comparison }
+
+comparison = { addition ~ comparison_tail? }
+
+comparison_tail = {
+    comp_op ~ addition
+  | is_not_null_op
+  | is_null_op
+  | in_op ~ addition
+  | starts_with_op ~ addition
+  | ends_with_op ~ addition
+  | contains_op ~ addition
+}
+
+is_not_null_op  = { kw_is ~ kw_not ~ kw_null }
+is_null_op      = { kw_is ~ kw_null }
+in_op           = { kw_in }
+starts_with_op  = { kw_starts ~ kw_with }
+ends_with_op    = { kw_ends ~ kw_with }
+contains_op     = { kw_contains }
+
+comp_op = { "<>" | "<=" | ">=" | "=" | "<" | ">" }
+
+addition = { multiplication ~ ((add_op) ~ multiplication)* }
+add_op   = { "+" | "-" }
+
+multiplication = { unary ~ ((mul_op) ~ unary)* }
+mul_op         = { "*" | "/" | "%" }
+
+unary = { "-" ~ unary | atom }
+
+atom = {
+    function_call
+  | case_expr
+  | list_literal
+  | map_projection
+  | map_literal
+  | parameter
+  | string_literal
+  | float_literal
+  | integer_literal
+  | boolean_literal
+  | null_literal
+  | property_or_variable
+  | "(" ~ expression ~ ")"
+}
+
+// --- Atoms ---
+
+property_or_variable = { identifier ~ ("." ~ identifier)* }
+
+function_call = { function_name ~ "(" ~ distinct_kw? ~ function_args? ~ ")" }
+function_name = { identifier ~ ("." ~ identifier)* }
+function_args = { star | expression ~ ("," ~ expression)* }
+
+case_expr = {
+    kw_case ~ expression? ~ when_clause+ ~ else_clause? ~ kw_end
+}
+when_clause = { kw_when ~ expression ~ kw_then ~ expression }
+else_clause = { kw_else ~ expression }
+
+list_literal = { "[" ~ (expression ~ ("," ~ expression)*)? ~ "]" }
+
+map_literal = { "{" ~ (map_pair ~ ("," ~ map_pair)*)? ~ "}" }
+map_pair    = { identifier ~ ":" ~ expression }
+
+map_projection      = { property_or_variable ~ "{" ~ map_projection_item ~ ("," ~ map_projection_item)* ~ "}" }
+map_projection_item = { map_projection_shorthand | map_projection_computed }
+map_projection_shorthand = { "." ~ identifier }
+map_projection_computed  = { identifier ~ ":" ~ expression }
+
+parameter = { "$" ~ identifier }
+
+// --- Literals ---
+
+null_literal    = { kw_null }
+boolean_literal = { kw_true | kw_false }
+
+float_literal   = @{
+    ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ ~ (("e" | "E") ~ ("+" | "-")? ~ ASCII_DIGIT+)?
+  | ASCII_DIGIT+ ~ ("e" | "E") ~ ("+" | "-")? ~ ASCII_DIGIT+
+}
+
+integer_literal = @{ ASCII_DIGIT+ }
+
+string_literal = {
+    "'" ~ single_string_content ~ "'"
+  | "\"" ~ double_string_content ~ "\""
+}
+single_string_content = @{ (!"'" ~ ("\\\\" | "\\'" | ANY))* }
+double_string_content = @{ (!"\"" ~ ("\\\\" | "\\\"" | ANY))* }
+
+// --- Keywords (case-insensitive) ---
+// Separated rules to avoid PEG matching issues with multi-word constructs.
+
+kw_match      = @{ ^"match" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_optional   = @{ ^"optional" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_where      = @{ ^"where" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_return     = @{ ^"return" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_with       = @{ ^"with" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_unwind     = @{ ^"unwind" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_as         = @{ ^"as" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_order      = @{ ^"order" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_by         = @{ ^"by" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_skip       = @{ ^"skip" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_limit      = @{ ^"limit" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_distinct   = @{ ^"distinct" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_and        = @{ ^"and" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_or         = @{ ^"or" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_xor        = @{ ^"xor" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_not        = @{ ^"not" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_in         = @{ ^"in" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_is         = @{ ^"is" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_null       = @{ ^"null" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_true       = @{ ^"true" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_false      = @{ ^"false" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_starts     = @{ ^"starts" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_ends       = @{ ^"ends" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_contains   = @{ ^"contains" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_asc        = @{ ^"asc" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_ascending  = @{ ^"ascending" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_desc       = @{ ^"desc" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_descending = @{ ^"descending" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_of         = @{ ^"of" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_timestamp  = @{ ^"timestamp" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_case       = @{ ^"case" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_when       = @{ ^"when" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_then       = @{ ^"then" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_else       = @{ ^"else" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_end        = @{ ^"end" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_create     = @{ ^"create" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_merge      = @{ ^"merge" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_delete     = @{ ^"delete" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_detach     = @{ ^"detach" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_set        = @{ ^"set" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_remove     = @{ ^"remove" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_on         = @{ ^"on" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_upsert     = @{ ^"upsert" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_call       = @{ ^"call" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_yield      = @{ ^"yield" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_alter      = @{ ^"alter" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_label      = @{ ^"label" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_schema     = @{ ^"schema" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_text       = @{ ^"text" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_index      = @{ ^"index" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_drop       = @{ ^"drop" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_language   = @{ ^"language" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_default    = @{ ^"default" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_override   = @{ ^"override" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_analyzer   = @{ ^"analyzer" ~ !(ASCII_ALPHANUMERIC | "_") }
+
+// --- Identifiers ---
+
+variable   = { identifier }
+identifier = @{
+    !reserved_word ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")*
+  | "`" ~ (!"`" ~ ANY)+ ~ "`"
+}
+
+reserved_word = @{
+    ( ^"match" | ^"optional" | ^"where" | ^"return" | ^"with"
+    | ^"unwind" | ^"order" | ^"skip" | ^"limit" | ^"as"
+    | ^"and" | ^"or" | ^"xor" | ^"not" | ^"in"
+    | ^"null" | ^"true" | ^"false" | ^"is"
+    | ^"starts" | ^"ends" | ^"contains"
+    | ^"distinct" | ^"by" | ^"asc" | ^"ascending"
+    | ^"desc" | ^"descending" | ^"of" | ^"timestamp"
+    | ^"case" | ^"when" | ^"then" | ^"else" | ^"end"
+    | ^"create" | ^"merge" | ^"delete" | ^"detach" | ^"set" | ^"remove"
+    | ^"on" | ^"upsert" | ^"call" | ^"yield"
+    | ^"alter" | ^"label" | ^"schema"
+    ) ~ !(ASCII_ALPHANUMERIC | "_")
+}

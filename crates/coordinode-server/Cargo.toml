@@ -1,0 +1,51 @@
+[package]
+name = "coordinode-server"
+description = "CoordiNode server binary: gRPC, HTTP/REST, Bolt, WebSocket, metrics"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "coordinode"
+path = "src/main.rs"
+
+[features]
+default = ["bolt", "graphql", "vector", "full-text"]
+bolt = []
+graphql = []
+vector = ["dep:coordinode-vector"]
+full-text = ["dep:coordinode-search"]
+
+[dependencies]
+coordinode-core = { workspace = true }
+coordinode-embed = { workspace = true }
+coordinode-query = { workspace = true }
+coordinode-vector = { workspace = true, optional = true }
+coordinode-search = { workspace = true, optional = true }
+coordinode-storage = { workspace = true }
+coordinode-raft = { workspace = true }
+coordinode-auth = { workspace = true }
+tokio = { workspace = true }
+tonic = { workspace = true }
+tonic-prost = "0.14"
+prost = { workspace = true }
+serde = { workspace = true }
+metrics = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+thiserror = { workspace = true }
+rmpv = { workspace = true }
+sha2 = { workspace = true }
+hex = "0.4"
+tokio-stream = "0.1"
+
+[build-dependencies]
+tonic-prost-build = "0.14"
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

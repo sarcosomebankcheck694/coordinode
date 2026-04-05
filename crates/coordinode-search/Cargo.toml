@@ -1,0 +1,40 @@
+[package]
+name = "coordinode-search"
+description = "Full-text search, multilingual stemming, CJK, encrypted search (SSE)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[features]
+# Per-language CJK tokenization — include only what you need
+cjk-zh = ["dep:jieba-rs"]                            # Chinese (jieba-rs, +21MB)
+cjk-ja = ["dep:lindera", "lindera/embed-ipadic"]     # Japanese (lindera IPAdic, +15MB)
+cjk-ko = ["dep:lindera", "lindera/embed-ko-dic"]     # Korean (lindera KO-dic, +34MB)
+# Umbrella: all CJK languages (~70MB total)
+cjk = ["cjk-zh", "cjk-ja", "cjk-ko"]
+
+[dependencies]
+coordinode-storage = { workspace = true }
+tantivy = { workspace = true }
+rust-stemmers = { workspace = true }
+whatlang = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+# SSE (Searchable Symmetric Encryption) — CE encrypted search
+aes-gcm = { workspace = true }
+hmac = { workspace = true }
+sha2 = { workspace = true }
+rand = { workspace = true }
+
+# CJK tokenization (optional, activated by per-language features)
+lindera = { workspace = true, optional = true }
+jieba-rs = { workspace = true, optional = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true
